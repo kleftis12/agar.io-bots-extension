@@ -559,3 +559,194 @@ class Bot {
         return e;
     }
 }
+ class Minimap {
+        constructor() {
+            this.canvas = null;
+            this.ctx = null;
+            this.init();
+        }
+        init() {
+            this.createCanvas();
+            requestAnimationFrame(this.drawUpdate.bind(this));
+        }
+        createCanvas() {
+            if (!document.body) return setTimeout(this.createCanvas.bind(this), 100);
+            this.canvas = document.createElement("canvas");
+            this.ctx = this.canvas.getContext('2d');
+            this.addCanvasCustomization();
+            document.body.appendChild(this.canvas);
+            console.log("canvas created");
+        }
+        addCanvasCustomization() {
+            this.canvas.id = "Minimap";
+            this.canvas.width = 200;
+            this.canvas.height = 200;
+            this.canvas.style.position = "absolute";
+            this.canvas.style.border = '3px solid #444444';
+            this.canvas.style.top = "75%";
+            this.canvas.style.right = "2%";
+            this.drawUpdate();
+        }
+        clearCanvas() {
+            this.ctx.save();
+            this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.restore();
+        }
+        drawUpdate() {
+            if (!this.ctx && !window.server.cfg.Minimap) return console.log(window.server.cfg.Minimap);
+            this.clearCanvas();
+            const cWidth = this.canvas.width;
+            const cHeight = this.canvas.height;
+            this.ctx.strokeStyle = "#444444";
+            this.ctx.strokeWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.globalAlpha = 0.9;
+            this.ctx.rect(0, 0, cWidth, cHeight);
+            this.ctx.fillStyle = "black";
+            this.ctx.fill();
+            var sectorCount = 5;
+            var w = cWidth / sectorCount;
+            var h = cHeight / sectorCount;
+            this.ctx.fillStyle = "#808080";
+            this.ctx.textBaseline = "middle";
+            this.ctx.textAlign = "center";
+            this.ctx.globalAlpha = 0.7;
+            this.ctx.font = (w / 3 | 0) + "px Ubuntu";
+            for (var y = 0; y < sectorCount; ++y) {
+                for (var x = 0; x < sectorCount; ++x) {
+                    var str = String.fromCharCode(65+y) + (x + 1);
+                    var dx = (x + 0.5) * w;
+                    var dy = (y + 0.5) * h;
+                    this.ctx.fillText(str, dx, dy);
+                }
+            }
+            this.ctx.restore();
+            this.ctx.save();
+            if (window.server.cfg.drawBotsOnMinimap && window.bots.length > 0) this.drawBotUpdate();
+            this.drawAgarPlayers();
+            this.drawCellUpdate(window.server.cellX, window.server.cellY, "#00FFFF");
+            requestAnimationFrame(this.drawUpdate.bind(this));
+        }
+        drawCellUpdate(x, y, color) {
+            const transX = (7071 + x) / 14142 * this.canvas.height;
+            const transY = (7071 + y) / 14142 * this.canvas.width;
+            this.ctx.fillStyle = color;
+            this.ctx.beginPath();
+            this.ctx.arc(transX, transY, 5, 0, 2 * Math.PI);
+            this.ctx.fill();
+            const transMoveX = (7071 + ((window.clientXXX - window.innerWidth / 2) / window.server.zoomValue) + window.server.cellX) / 14142 * this.canvas.height;
+            const transMoveY = (7071 + ((window.clientYYY - window.innerHeight / 2) / window.server.zoomValue) + window.server.cellY) / 14142 * this.canvas.width;
+            this.ctx.globalAlpha = 1.0;
+            this.ctx.fillStyle = "#FF0000";
+            this.ctx.beginPath();
+            this.ctx.arc(transMoveX, transMoveY, 4, 0, 2 * Math.PI);
+            this.ctx.fill();
+        }
+        drawBotUpdate() {
+            for (const bot of window.bots) {
+                if (bot.y !== 0 && bot.x !== 0) {
+                    this.ctx.globalAlpha = 0.9;
+                    const botTransX = (7071 + bot.x) / 14142 * this.canvas.height;
+                    const botTransY = (7071 + bot.y) / 14142 * this.canvas.width;
+                    this.ctx.fillStyle = "#FFFF99";
+                    this.ctx.beginPath();
+                    this.ctx.arc(botTransX, botTransY, 2, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                }
+            }
+        }
+        drawAgarPlayers() {
+            for (const bot of window.agarProto.lb) {
+                if (bot.y !== 0 && bot.x !== 0) {
+                    this.ctx.globalAlpha = 0.9;
+                    const botTransX = (7071 + bot.x) / 14142 * this.canvas.height;
+                    const botTransY = (7071 + bot.y) / 14142 * this.canvas.width;
+                    this.ctx.fillStyle = "#46d246";
+                    this.ctx.beginPath();
+                    this.ctx.arc(botTransX, botTransY, 6, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                }
+            }
+        }
+    }
+    window.addEventListener("mousemove", event => {
+        window.clientXXX = event.clientX;
+        window.clientYYY = event.clientY;
+    });
+    class agarProto {
+        constructor() {
+            this.ws = null;
+            this.dKey = 0;
+            this.clientKey = 0;
+            this.lb = [];
+            setInterval(() => {
+                if(this.lb[0] && this.lb.length > 0) {
+                    window.server.sendCheck(this.lb[0].x, this.lb[0].y);
+                } else {
+                    window.server.sendCheck2();
+                }
+                if(this.lb.length <= 1) this.lb = [];
+            }, 500);
+        }
+        xor(buf, xorKey) {
+            const newBuf = new DataView(new ArrayBuffer(buf.byteLength));
+            for (let i = 0; i < buf.byteLength; i++) newBuf.setUint8(i, buf.getUint8(i) ^ (xorKey >>> ((i % 4) * 8)) & 255);
+            return newBuf;
+        }
+        overWrite(ws) {
+            this.ws = ws;
+            this.dKey = 0;
+            setTimeout(() => {
+                this.ws._send = this.ws.send;
+                this.ws.send = function() {
+                    this.ws._send(arguments[0]);
+                    let msg = new DataView(new Uint8Array(arguments[0]).buffer);
+                    if(msg.getUint8(0) == 255 && !this.clientKey) {
+                        this.clientKey = msg.getUint32(1, true);
+                    }
+                }.bind(this);
+                this.ws._msgHandler = this.ws.onmessage;
+                this.ws.onmessage = function(msg) {
+                    this.ws._msgHandler(msg);
+                    msg = new DataView(msg.data);
+                    this.dKey ? msg = this.xor(msg, this.dKey ^ this.clientKey) : "";
+                    let offset = 0;
+                    let opcode = msg.getUint8(offset++);
+                    switch(opcode) {
+                        case 69: {
+                            this.lb = [];
+                            let record = msg.getUint16(offset, true);
+                            offset += 2;
+                            for(let i = 0; i < record; i++) {
+                                let x = msg.getInt32(offset, true);
+                                offset += 4;
+                                let y = msg.getInt32(offset, true);
+                                offset += 4;
+                                let size = msg.getInt32(offset, true);
+                                offset += 5;
+                                let mass = ~~(Math.sqrt(100 * size));
+                                this.lb.push({
+                                    x: x - ((window.server.mapLocation.minx + window.server.mapLocation.maxx) / 2),
+                                    y: y - ((window.server.mapLocation.miny + window.server.mapLocation.maxy) / 2),
+                                    size: size,
+                                    mass: mass
+                                });
+                            }
+                        } break;
+                        case 241: {
+                            this.dKey = msg.getInt32(offset, true);
+                        } break;
+                    }
+                }.bind(this);
+            }, 0);
+        }
+    }
+
+    if(window.location.origin == "https://agar.io") {
+        window.agarProto = new agarProto()
+        setTimeout(() => {
+             window.minimap = new Minimap();
+        }, 5000);
+    }
+
