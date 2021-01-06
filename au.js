@@ -464,8 +464,8 @@ class Bot {
     moveTo(x, y) {
         let buf = this.Buffer(13);
         buf.setUint8(0, 16);
-        buf.setUint32(1, x + this.offsetX, true);
-        buf.setUint32(5, y + this.offsetY, true);
+        buf.setUint32(2, x + this.offsetX, true);
+        buf.setUint32(4, y + this.offsetY, true);
         buf.setUint32(9, this.decryptionKey, true);
         this.send(buf, true);
     }
