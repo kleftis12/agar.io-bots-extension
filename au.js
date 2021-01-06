@@ -1,12 +1,3 @@
-// ==UserScript==
-// @name         AgarUnlimited++
-// @namespace    AgarUnlimited++
-// @version      0.1
-// @description  try to take over the world!
-// @author       You
-// @match        *://agar.io/*
-// @grant        none
-// ==/UserScript==
 
 function editCore(core) {
     core = core.replace(/;if\((\w)<1\.0\){/i, ';if($1<0){');
