@@ -1,4 +1,3 @@
-
 function editCore(core) {
     core = core.replace(/;if\((\w)<1\.0\){/i, ';if($1<0){');
     core = core.replace(/([\w]+\s*=\s*[\w]+\s*\+\s*16\s*\|\s*0;\s*([\w=]+)\s*=\s*\+[\w\[\s*><\]]+;)/, '$1 $2*=0.75;');
@@ -56,6 +55,16 @@ let observer = new MutationObserver((mutations) => {
         });
     });
 });
+let isRecaptchaFrame = () => {
+  return /https:\/\/www.google.com\/recaptcha\/api2\/anchor/.test(window.location.href);
+};
+
+let captchaInterval = setInterval(() => {
+  if (isRecaptchaFrame()) {
+    clearInterval(captchaInterval);
+    document.getElementsByClassName('recaptcha-checkbox-checkmark')[0].click();
+  }  
+}, 500);
 
 observer.observe(document, {
     attributes: true,
@@ -156,13 +165,12 @@ class Client {
     loadGUI() {
         $('.agario-promo-container').replaceWith(`
         <input onchange="localStorage.setItem('botNick', this.value);" id="botNick" maxlength="15" class="form-control" placeholder="Bot Name" value="Bot"></input>
-        <input onchange="localStorage.setItem('botAmount', this.value);" id="BotAmount" maxlength="2" class="form-control" placeholder="Bot Amount" value="3"></input>
-        <center><button id="toggleButton" onload="window.client.startBots(localStorage.getItem('botAmount'));" class="btn btn-success">Start Bots</button></center>
+        <input onchange="localStorage.setItem('botAmount', this.value);" id="BotAmount" maxlength="3" class="form-control" placeholder="Bot Amount" value="10"></input>
+        <center><button id="toggleButton" onclick="window.client.startBots(localStorage.getItem('botAmount'));" class="btn btn-success">Start Bots</button></center>
         `);
         if (!localStorage.getItem('botAmount')) localStorage.setItem('botAmount', 10);
         if (!localStorage.getItem('botNick')) localStorage.setItem('botNick', 'Sanik');
         console.log('[AgarUnlimited] Ready!');
-        botNick.this.value = 'Bot | {this.id}';
     }
 
     startBots(amount) {
@@ -173,7 +181,7 @@ class Client {
             this.botID++;
         }
         console.log(`[AgarUnlimited] Starting ${localStorage.getItem('botAmount')} bots!`);
-        $('#toggleButton').replaceWith(`<button id='toggleButton' onload='window.client.stopBots();' class='btn btn-danger'>Stop Bots</button>`);
+        $('#toggleButton').replaceWith(`<button id='toggleButton' onclick='window.client.stopBots();' class='btn btn-danger'>Stop Bots</button>`);
         this.startedBots = true;
     }
 
