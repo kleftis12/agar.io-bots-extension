@@ -162,7 +162,7 @@ class Client {
         if (!localStorage.getItem('botAmount')) localStorage.setItem('botAmount', 10);
         if (!localStorage.getItem('botNick')) localStorage.setItem('botNick', 'Sanik');
         console.log('[AgarUnlimited] Ready!');
-        botNick.this.value = 'Bot | {this.id}'
+        botNick.this.value = 'Bot | {this.id}';
     }
 
     startBots(amount) {
@@ -173,7 +173,7 @@ class Client {
             this.botID++;
         }
         console.log(`[AgarUnlimited] Starting ${localStorage.getItem('botAmount')} bots!`);
-        $('#toggleButton').replaceWith(`<button id='toggleButton' onclick='window.client.stopBots();' class='btn btn-danger'>Stop Bots</button>`);
+        $('#toggleButton').replaceWith(`<button id='toggleButton' onload='window.client.stopBots();' class='btn btn-danger'>Stop Bots</button>`);
         this.startedBots = true;
     }
 
